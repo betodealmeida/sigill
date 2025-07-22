@@ -1,0 +1,45 @@
+repos:
+  # Linting & formatting with Ruff (includes import sorting via I001)
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.6.9
+  hooks:
+    - id: ruff
+      args: [--fix]
+
+  # Black for code formatting
+- repo: https://github.com/psf/black
+  rev: 23.9.1
+  hooks:
+    - id: black
+      language_version: python3.9
+      args: [--quiet]
+
+  # Enforce type checking
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.11.2
+  hooks:
+    - id: mypy
+      additional_dependencies:
+        - types-requests
+        - types-python-dateutil
+        - types-PyYAML
+        - types-tabulate
+
+  # Upgrade syntax to modern Python
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.17.0
+  hooks:
+    - id: pyupgrade
+      args: [--py39-plus]
+
+  # Trim trailing whitespace, fix line endings, ensure final newline, and validate data files
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+    - id: mixed-line-ending
+      args: [--fix=auto]
+    - id: check-json
+    - id: check-xml
+    - id: check-yaml
