@@ -325,7 +325,7 @@ uv run mypy src/
 
 ## Test Coverage
 
-Sigill maintains high test coverage with **97.97% overall coverage**:
+Sigill maintains high test coverage with **97.72% overall coverage**:
 - **143 comprehensive tests** covering all major functionality
 - **Complex SQL scenarios**: UNION, CTEs, JOINs, subqueries, window functions
 - **Edge case handling**: Error conditions, malformed queries, permission validation
