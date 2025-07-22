@@ -498,15 +498,117 @@ def _is_where_subset(sql: sqlglot.exp.Select, permission: sqlglot.exp.Select) ->
     return _all_permission_conditions_present(sql_where, perm_where)
 
 
+def _condition_satisfies_permission(
+    sql_condition: sqlglot.Expression, perm_condition: sqlglot.Expression
+) -> bool:
+    """Check if SQL condition satisfies (is more restrictive than) permission condition."""
+    # First check for exact match
+    if _expressions_equal(sql_condition, perm_condition):
+        return True
+    
+    # Handle comparison operations (>, <, >=, <=, =)
+    if isinstance(sql_condition, sqlglot.exp.Binary) and isinstance(perm_condition, sqlglot.exp.Binary):
+        return _compare_binary_conditions(sql_condition, perm_condition)
+    
+    return False
+
+
+def _compare_binary_conditions(
+    sql_condition: sqlglot.exp.Binary, perm_condition: sqlglot.exp.Binary
+) -> bool:
+    """Compare binary conditions to see if SQL is more restrictive than permission."""
+    # Must be operations on the same column/expression
+    if not _expressions_equal(sql_condition.left, perm_condition.left):
+        return False
+    
+    # Extract operators and values
+    sql_op = type(sql_condition).__name__.lower()
+    perm_op = type(perm_condition).__name__.lower()
+    
+    # Try to extract numeric values for comparison
+    try:
+        sql_value = _extract_numeric_value(sql_condition.right)
+        perm_value = _extract_numeric_value(perm_condition.right)
+        
+        if sql_value is None or perm_value is None:
+            return False
+        
+        return _is_more_restrictive(sql_op, sql_value, perm_op, perm_value)
+    except (ValueError, AttributeError):
+        return False
+
+
+def _extract_numeric_value(expr: sqlglot.Expression) -> Optional[float]:
+    """Extract numeric value from an expression."""
+    if isinstance(expr, sqlglot.exp.Literal):
+        try:
+            return float(expr.this)
+        except ValueError:
+            return None
+    return None
+
+
+def _is_more_restrictive(
+    sql_op: str, sql_value: float, perm_op: str, perm_value: float
+) -> bool:
+    """Check if SQL condition is more restrictive than permission condition."""
+    # Handle > operations: age > 21 is more restrictive than age > 18
+    if perm_op == "gt" and sql_op == "gt":
+        return sql_value >= perm_value
+    
+    # Handle >= operations: age >= 21 is more restrictive than age >= 18  
+    if perm_op == "gte" and sql_op == "gte":
+        return sql_value >= perm_value
+    
+    # Handle >= vs >: age >= 22 is more restrictive than age > 21
+    if perm_op == "gt" and sql_op == "gte":
+        return sql_value >= perm_value + 1
+    
+    # Handle > vs >=: age > 21 is more restrictive than age >= 21
+    if perm_op == "gte" and sql_op == "gt":
+        return sql_value >= perm_value
+    
+    # Handle < operations: age < 18 is more restrictive than age < 21
+    if perm_op == "lt" and sql_op == "lt":
+        return sql_value <= perm_value
+    
+    # Handle <= operations: age <= 18 is more restrictive than age <= 21
+    if perm_op == "lte" and sql_op == "lte":
+        return sql_value <= perm_value
+    
+    # Handle <= vs <: age <= 20 is more restrictive than age < 21
+    if perm_op == "lt" and sql_op == "lte":
+        return sql_value <= perm_value - 1
+    
+    # Handle < vs <=: age < 21 is more restrictive than age <= 21
+    if perm_op == "lte" and sql_op == "lt":
+        return sql_value <= perm_value
+    
+    # Handle = operations: age = 20 is more restrictive than age > 18
+    if sql_op == "eq":
+        if perm_op == "gt":
+            return sql_value > perm_value
+        elif perm_op == "gte":
+            return sql_value >= perm_value
+        elif perm_op == "lt":
+            return sql_value < perm_value
+        elif perm_op == "lte":
+            return sql_value <= perm_value
+        elif perm_op == "eq":
+            return sql_value == perm_value
+    
+    return False
+
+
 def _all_permission_conditions_present(
     sql_where: sqlglot.exp.Where, perm_where: sqlglot.exp.Where
 ) -> bool:
-    """Check that all permission conditions are present in SQL WHERE clause."""
+    """Check that all permission conditions are satisfied by SQL WHERE clause."""
     perm_conditions = _extract_and_conditions(perm_where)
     sql_conditions = _extract_and_conditions(sql_where)
 
     return all(
-        any(_expressions_equal(sql_cond, perm_cond) for sql_cond in sql_conditions)
+        any(_condition_satisfies_permission(sql_cond, perm_cond) for sql_cond in sql_conditions)
         for perm_cond in perm_conditions
     )
 
