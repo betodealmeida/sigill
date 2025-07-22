@@ -95,18 +95,18 @@ All types of JOIN operations are supported:
 
 ```sql
 -- Inner JOIN
-SELECT u.name, o.total 
-FROM users u 
+SELECT u.name, o.total
+FROM users u
 INNER JOIN orders o ON u.id = o.user_id
 
 -- Left/Right/Full OUTER JOINs
-SELECT u.name, o.total 
-FROM users u 
+SELECT u.name, o.total
+FROM users u
 LEFT JOIN orders o ON u.id = o.user_id
 
 -- Self JOINs
 SELECT u1.name, u2.name as manager_name
-FROM users u1 
+FROM users u1
 INNER JOIN users u2 ON u1.manager_id = u2.id
 ```
 
@@ -115,13 +115,13 @@ Compound statements are fully supported:
 
 ```sql
 -- UNION operations
-SELECT name FROM users 
-UNION 
+SELECT name FROM users
+UNION
 SELECT name FROM customers
 
 -- INTERSECT and EXCEPT
-SELECT name FROM users 
-INTERSECT 
+SELECT name FROM users
+INTERSECT
 SELECT name FROM active_users
 ```
 
@@ -139,7 +139,7 @@ SELECT name FROM user_summary
 WITH RECURSIVE employee_hierarchy AS (
     SELECT id, name, manager_id FROM employees WHERE manager_id IS NULL
     UNION ALL
-    SELECT e.id, e.name, e.manager_id 
+    SELECT e.id, e.name, e.manager_id
     FROM employees e
     INNER JOIN employee_hierarchy eh ON e.manager_id = eh.id
 )
@@ -151,11 +151,11 @@ Subqueries are supported in all contexts:
 
 ```sql
 -- WHERE clause subqueries
-SELECT name FROM users 
+SELECT name FROM users
 WHERE id IN (SELECT user_id FROM orders WHERE total > 100)
 
 -- SELECT clause subqueries
-SELECT name, 
+SELECT name,
        (SELECT COUNT(*) FROM orders WHERE user_id = users.id) as order_count
 FROM users
 
@@ -169,7 +169,7 @@ SELECT name FROM (
 Full support for analytical functions:
 
 ```sql
-SELECT 
+SELECT
     name,
     ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rank,
     LAG(salary, 1) OVER (ORDER BY hire_date) as prev_salary
@@ -250,8 +250,8 @@ check_permission(
 # ✅ Allowed - UNION query with wildcard permission
 check_permission(
     sql="""
-        SELECT name FROM users 
-        UNION 
+        SELECT name FROM users
+        UNION
         SELECT name FROM customers
     """,
     permission='SELECT name FROM "*"'
@@ -271,7 +271,7 @@ check_permission(
 # ✅ Allowed - Window function with column permissions
 check_permission(
     sql="""
-        SELECT name, 
+        SELECT name,
                ROW_NUMBER() OVER (ORDER BY salary) as rank
         FROM users
     """,
@@ -325,11 +325,12 @@ uv run mypy src/
 
 ## Test Coverage
 
-Sigill maintains high test coverage with **97.72% overall coverage**:
-- **143 comprehensive tests** covering all major functionality
+Sigill maintains **100% code coverage** with comprehensive testing:
+- **164 comprehensive tests** covering all major functionality
+- **Complete line coverage**: Every single line of code is tested
 - **Complex SQL scenarios**: UNION, CTEs, JOINs, subqueries, window functions
 - **Edge case handling**: Error conditions, malformed queries, permission validation
-- **Production ready**: Extensively tested for reliability
+- **Production ready**: Extensively tested for maximum reliability
 
 ## License
 
