@@ -505,11 +505,13 @@ def _condition_satisfies_permission(
     # First check for exact match
     if _expressions_equal(sql_condition, perm_condition):
         return True
-    
+
     # Handle comparison operations (>, <, >=, <=, =)
-    if isinstance(sql_condition, sqlglot.exp.Binary) and isinstance(perm_condition, sqlglot.exp.Binary):
+    if isinstance(sql_condition, sqlglot.exp.Binary) and isinstance(
+        perm_condition, sqlglot.exp.Binary
+    ):
         return _compare_binary_conditions(sql_condition, perm_condition)
-    
+
     return False
 
 
@@ -520,19 +522,19 @@ def _compare_binary_conditions(
     # Must be operations on the same column/expression
     if not _expressions_equal(sql_condition.left, perm_condition.left):
         return False
-    
+
     # Extract operators and values
     sql_op = type(sql_condition).__name__.lower()
     perm_op = type(perm_condition).__name__.lower()
-    
+
     # Try to extract numeric values for comparison
     try:
         sql_value = _extract_numeric_value(sql_condition.right)
         perm_value = _extract_numeric_value(perm_condition.right)
-        
+
         if sql_value is None or perm_value is None:
             return False
-        
+
         return _is_more_restrictive(sql_op, sql_value, perm_op, perm_value)
     except (ValueError, AttributeError):
         return False
@@ -555,35 +557,35 @@ def _is_more_restrictive(
     # Handle > operations: age > 21 is more restrictive than age > 18
     if perm_op == "gt" and sql_op == "gt":
         return sql_value >= perm_value
-    
-    # Handle >= operations: age >= 21 is more restrictive than age >= 18  
+
+    # Handle >= operations: age >= 21 is more restrictive than age >= 18
     if perm_op == "gte" and sql_op == "gte":
         return sql_value >= perm_value
-    
+
     # Handle >= vs >: age >= 22 is more restrictive than age > 21
     if perm_op == "gt" and sql_op == "gte":
         return sql_value >= perm_value + 1
-    
+
     # Handle > vs >=: age > 21 is more restrictive than age >= 21
     if perm_op == "gte" and sql_op == "gt":
         return sql_value >= perm_value
-    
+
     # Handle < operations: age < 18 is more restrictive than age < 21
     if perm_op == "lt" and sql_op == "lt":
         return sql_value <= perm_value
-    
+
     # Handle <= operations: age <= 18 is more restrictive than age <= 21
     if perm_op == "lte" and sql_op == "lte":
         return sql_value <= perm_value
-    
+
     # Handle <= vs <: age <= 20 is more restrictive than age < 21
     if perm_op == "lt" and sql_op == "lte":
         return sql_value <= perm_value - 1
-    
+
     # Handle < vs <=: age < 21 is more restrictive than age <= 21
     if perm_op == "lte" and sql_op == "lt":
         return sql_value <= perm_value
-    
+
     # Handle = operations: age = 20 is more restrictive than age > 18
     if sql_op == "eq":
         if perm_op == "gt":
@@ -596,7 +598,7 @@ def _is_more_restrictive(
             return sql_value <= perm_value
         elif perm_op == "eq":
             return sql_value == perm_value
-    
+
     return False
 
 
@@ -608,7 +610,10 @@ def _all_permission_conditions_present(
     sql_conditions = _extract_and_conditions(sql_where)
 
     return all(
-        any(_condition_satisfies_permission(sql_cond, perm_cond) for sql_cond in sql_conditions)
+        any(
+            _condition_satisfies_permission(sql_cond, perm_cond)
+            for sql_cond in sql_conditions
+        )
         for perm_cond in perm_conditions
     )
 

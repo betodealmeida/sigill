@@ -3,7 +3,6 @@ Tests for WHERE condition restrictiveness logic.
 Ensures that more restrictive conditions are properly recognized.
 """
 
-import pytest
 from sigill.api import check_permission
 
 
@@ -14,7 +13,7 @@ class TestConditionRestrictiveness:
         """Test that age > 21 is more restrictive than age > 18."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 21",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is True
 
@@ -22,7 +21,7 @@ class TestConditionRestrictiveness:
         """Test that age > 15 is less restrictive than age > 18."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 15",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is False
 
@@ -30,7 +29,7 @@ class TestConditionRestrictiveness:
         """Test that age >= 21 is more restrictive than age >= 18."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age >= 21",
-            permission="SELECT name FROM users WHERE age >= 18"
+            permission="SELECT name FROM users WHERE age >= 18",
         )
         assert result is True
 
@@ -39,14 +38,14 @@ class TestConditionRestrictiveness:
         # age >= 22 is more restrictive than age > 21
         result = check_permission(
             sql="SELECT name FROM users WHERE age >= 22",
-            permission="SELECT name FROM users WHERE age > 21"
+            permission="SELECT name FROM users WHERE age > 21",
         )
         assert result is True
-        
+
         # age > 21 is more restrictive than age >= 21
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 21",
-            permission="SELECT name FROM users WHERE age >= 21"
+            permission="SELECT name FROM users WHERE age >= 21",
         )
         assert result is True
 
@@ -54,7 +53,7 @@ class TestConditionRestrictiveness:
         """Test that age < 18 is more restrictive than age < 21."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age < 18",
-            permission="SELECT name FROM users WHERE age < 21"
+            permission="SELECT name FROM users WHERE age < 21",
         )
         assert result is True
 
@@ -62,7 +61,7 @@ class TestConditionRestrictiveness:
         """Test that age < 25 is less restrictive than age < 21."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age < 25",
-            permission="SELECT name FROM users WHERE age < 21"
+            permission="SELECT name FROM users WHERE age < 21",
         )
         assert result is False
 
@@ -71,14 +70,14 @@ class TestConditionRestrictiveness:
         # age = 20 satisfies age > 18
         result = check_permission(
             sql="SELECT name FROM users WHERE age = 20",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is True
-        
+
         # age = 15 does not satisfy age > 18
         result = check_permission(
             sql="SELECT name FROM users WHERE age = 15",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is False
 
@@ -86,7 +85,7 @@ class TestConditionRestrictiveness:
         """Test that exact condition matches still work."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 18",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is True
 
@@ -94,7 +93,7 @@ class TestConditionRestrictiveness:
         """Test that conditions on different columns don't match."""
         result = check_permission(
             sql="SELECT name FROM users WHERE salary > 50000",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is False
 
@@ -102,13 +101,13 @@ class TestConditionRestrictiveness:
         """Test that non-numeric conditions fall back to exact matching."""
         result = check_permission(
             sql="SELECT name FROM users WHERE status = 'active'",
-            permission="SELECT name FROM users WHERE status = 'active'"
+            permission="SELECT name FROM users WHERE status = 'active'",
         )
         assert result is True
-        
+
         result = check_permission(
             sql="SELECT name FROM users WHERE status = 'inactive'",
-            permission="SELECT name FROM users WHERE status = 'active'"
+            permission="SELECT name FROM users WHERE status = 'active'",
         )
         assert result is False
 
@@ -120,7 +119,7 @@ class TestComplexConditionScenarios:
         """Test queries with multiple AND conditions."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 21 AND salary > 50000",
-            permission="SELECT name FROM users WHERE age > 18 AND salary > 40000"
+            permission="SELECT name FROM users WHERE age > 18 AND salary > 40000",
         )
         assert result is True
 
@@ -128,7 +127,7 @@ class TestComplexConditionScenarios:
         """Test that partial condition matches are rejected."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 21",
-            permission="SELECT name FROM users WHERE age > 18 AND department = 'engineering'"
+            permission="SELECT name FROM users WHERE age > 18 AND department = 'engineering'",
         )
         assert result is False  # Missing department condition
 
@@ -136,7 +135,7 @@ class TestComplexConditionScenarios:
         """Test that additional restrictive conditions are allowed."""
         result = check_permission(
             sql="SELECT name FROM users WHERE age > 21 AND department = 'engineering'",
-            permission="SELECT name FROM users WHERE age > 18"
+            permission="SELECT name FROM users WHERE age > 18",
         )
         assert result is True  # Additional condition makes it more restrictive
 
@@ -144,6 +143,6 @@ class TestComplexConditionScenarios:
         """Test string values that look like numbers."""
         result = check_permission(
             sql="SELECT name FROM products WHERE price > 100.50",
-            permission="SELECT name FROM products WHERE price > 50.25"
+            permission="SELECT name FROM products WHERE price > 50.25",
         )
         assert result is True

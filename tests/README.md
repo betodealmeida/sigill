@@ -8,7 +8,7 @@ This directory contains comprehensive tests for the sigill SQL authorization lib
 - **`test_api.py`** - Main API functions (`check`, `check_permission`, `tighten`) and basic functionality
 - **`test_complex_queries.py`** - Complex SQL constructs (UNION, CTEs, JOINs, subqueries, window functions)
 
-### Permission Validation Tests  
+### Permission Validation Tests
 - **`test_wildcard_patterns.py`** - Wildcard table permission matching (`*.table`, `catalog.*.*`, etc.)
 - **`test_column_validation.py`** - Column validation, ANONYMIZE functions, and GROUP BY checks
 - **`test_condition_extraction.py`** - WHERE condition parsing, AND extraction, query scoring
@@ -49,6 +49,6 @@ uv run pytest -v
 ## Test Organization Principles
 
 1. **Functionality-based grouping** - Tests organized by what they validate, not by coverage goals
-2. **Clear naming** - File names clearly indicate the area of functionality being tested  
+2. **Clear naming** - File names clearly indicate the area of functionality being tested
 3. **Comprehensive coverage** - Every edge case, error condition, and code path tested
 4. **Maintainable structure** - Easy to find and add tests for specific features
