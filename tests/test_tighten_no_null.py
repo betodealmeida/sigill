@@ -3,7 +3,6 @@ Tests for the improved tighten function that doesn't add NULL columns.
 """
 
 import pytest
-import sqlglot
 from sigill import tighten
 
 
@@ -16,7 +15,7 @@ class TestTightenNoNull:
             sql="SELECT name FROM users WHERE age > 18",
             permissions={"SELECT ANONYMIZE(name), age FROM users WHERE age > 21"},
         )
-        
+
         # Should only include ANONYMIZE(name), no NULL for age
         assert result.sql() == "SELECT ANONYMIZE(name) FROM users WHERE age > 21"
         assert "NULL" not in result.sql()
@@ -25,9 +24,11 @@ class TestTightenNoNull:
         """Test with multiple columns that match."""
         result = tighten(
             sql="SELECT name, age FROM users WHERE age > 18",
-            permissions={"SELECT ANONYMIZE(name), age, salary FROM users WHERE age > 21"},
+            permissions={
+                "SELECT ANONYMIZE(name), age, salary FROM users WHERE age > 21"
+            },
         )
-        
+
         # Should include both matching columns, no NULL for salary
         expected = "SELECT ANONYMIZE(name), age FROM users WHERE age > 21"
         assert result.sql() == expected
@@ -39,7 +40,7 @@ class TestTightenNoNull:
             sql="SELECT name FROM users WHERE age > 21",
             permissions={"SELECT ANONYMIZE(name) FROM users WHERE age > 21"},
         )
-        
+
         # Should be identical to permission
         assert result.sql() == "SELECT ANONYMIZE(name) FROM users WHERE age > 21"
 
@@ -49,7 +50,7 @@ class TestTightenNoNull:
             sql="SELECT COUNT(*), name FROM users",
             permissions={"SELECT COUNT(*), ANONYMIZE(name), MAX(salary) FROM users"},
         )
-        
+
         # Should include COUNT(*) and ANONYMIZE(name), skip MAX(salary)
         expected = "SELECT COUNT(*), ANONYMIZE(name) FROM users"
         assert result.sql() == expected
@@ -69,7 +70,7 @@ class TestTightenNoNull:
             sql="SELECT name, age FROM users",
             permissions={"SELECT ANONYMIZE(name), ANONYMIZE(email) FROM users"},
         )
-        
+
         # Should only include ANONYMIZE(name), no ANONYMIZE(email) since email not in SQL
         expected = "SELECT ANONYMIZE(name) FROM users"
         assert result.sql() == expected
@@ -81,7 +82,7 @@ class TestTightenNoNull:
             sql="SELECT name FROM users WHERE age > 18",
             permissions={"SELECT * FROM users WHERE age > 21"},
         )
-        
+
         # Should keep the original projection since * allows everything
         expected = "SELECT name FROM users WHERE age > 21"
         assert result.sql() == expected
@@ -90,9 +91,11 @@ class TestTightenNoNull:
         """Test that complex WHERE conditions are properly preserved."""
         result = tighten(
             sql="SELECT name, age FROM users WHERE department = 'eng'",
-            permissions={"SELECT ANONYMIZE(name), age FROM users WHERE department = 'eng' AND salary > 50000"},
+            permissions={
+                "SELECT ANONYMIZE(name), age FROM users WHERE department = 'eng' AND salary > 50000"
+            },
         )
-        
+
         # Should include both matching columns with tighter WHERE
         expected = "SELECT ANONYMIZE(name), age FROM users WHERE department = 'eng' AND salary > 50000"
         assert result.sql() == expected
@@ -107,9 +110,11 @@ class TestTightenCompatibility:
         # This used to work and should continue to work
         result = tighten(
             sql="SELECT a, b FROM users WHERE salary < 2000",
-            permissions={"SELECT a, ANONYMIZE(b) FROM users WHERE id = 1 AND salary < 1000"},
+            permissions={
+                "SELECT a, ANONYMIZE(b) FROM users WHERE id = 1 AND salary < 1000"
+            },
         )
-        
+
         # Should apply the permission constraints
         expected = "SELECT a, ANONYMIZE(b) FROM users WHERE id = 1 AND salary < 1000"
         assert result.sql() == expected
@@ -120,23 +125,29 @@ class TestTightenCompatibility:
             "SELECT name FROM users WHERE age > 25",
             "SELECT ANONYMIZE(name), age FROM users WHERE age > 18",
         }
-        
+
         result = tighten(
             sql="SELECT name FROM users WHERE age > 20",
             permissions=permissions,
         )
-        
+
         # Should pick the best matching permission
         sql_result = result.sql()
-        assert "ANONYMIZE(name)" in sql_result or ("name" in sql_result and "ANONYMIZE" not in sql_result)
+        assert "ANONYMIZE(name)" in sql_result or (
+            "name" in sql_result and "ANONYMIZE" not in sql_result
+        )
         assert "NULL" not in sql_result
 
     def test_from_clauses_copied_correctly(self):
         """Test that FROM, WHERE, GROUP BY clauses are copied correctly."""
         result = tighten(
             sql="SELECT name FROM users WHERE age > 18",
-            permissions={"SELECT ANONYMIZE(name) FROM users WHERE age > 21 GROUP BY department"},
+            permissions={
+                "SELECT ANONYMIZE(name) FROM users WHERE age > 21 GROUP BY department"
+            },
         )
-        
-        expected = "SELECT ANONYMIZE(name) FROM users WHERE age > 21 GROUP BY department"
+
+        expected = (
+            "SELECT ANONYMIZE(name) FROM users WHERE age > 21 GROUP BY department"
+        )
         assert result.sql() == expected
