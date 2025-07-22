@@ -792,6 +792,10 @@ def _build_constrained_projections(
     sql: sqlglot.exp.Select, permission: sqlglot.exp.Select
 ) -> list[sqlglot.exp.Expression]:
     """Build projections for tightened query based on permission."""
+    # Handle wildcard permission - if permission has *, use SQL projections
+    if any(isinstance(expr, sqlglot.exp.Star) for expr in permission.expressions):
+        return [expr.copy() for expr in sql.expressions]
+
     new_projections = []
 
     for perm_expr in permission.expressions:
@@ -799,8 +803,12 @@ def _build_constrained_projections(
 
         if matching_expr:
             new_projections.append(perm_expr.copy())
-        else:
-            new_projections.append(sqlglot.exp.Null())
+        # Skip unmatched expressions instead of adding NULL
+
+    # If no projections match, this means the query cannot be tightened properly
+    # This should have been caught earlier by permission checking
+    if not new_projections:
+        raise ValueError("No matching projections found between SQL and permission")
 
     return new_projections
 

@@ -31,15 +31,14 @@ def test_line_716_no_matching_expression_in_tighten():
     sql = "SELECT unique_query_column FROM users"
     permissions = {"SELECT completely_different_permission_column FROM users"}
 
+    # With the fixed behavior, this should raise an error for no matching projections
     try:
-        result = tighten(sql, permissions)
-        # The tighten should complete but with NULL for non-matching columns
-        # Check that the result contains NULL (which comes from line 716 path)
-        result_sql = result.sql()
-        assert "NULL" in result_sql
-    except ValueError:
-        # If no matching permission found, that's also expected behavior
-        pass
+        tighten(sql, permissions)
+        # Should not reach here anymore with the new behavior
+        assert False, "Expected ValueError for no matching projections"
+    except ValueError as e:
+        # This is now the expected behavior
+        assert "No matching projections found" in str(e)
 
 
 def test_line_747_no_matching_anonymize_expression_direct():
@@ -67,16 +66,16 @@ def test_comprehensive_final_edge_cases():
     result1 = _matches_two_part_wildcard(sql_tables, perm_parts)
     assert result1 is False
 
-    # Test 2: Tighten scenario that should involve line 716
+    # Test 2: Tighten scenario that should now raise error for no matching projections
     try:
         sql = "SELECT col1, col2 FROM table1"
         perms = {"SELECT different_col1, different_col2 FROM table1"}
-        result2 = tighten(sql, perms)
-        # Should succeed with NULLs for non-matching columns
-        assert "NULL" in result2.sql()
-    except ValueError:
-        # Also acceptable if no matching permission is found
-        pass
+        tighten(sql, perms)
+        # Should not reach here with new behavior
+        assert False, "Expected ValueError for no matching projections"
+    except ValueError as e:
+        # Now the expected behavior - no matching projections
+        assert "No matching projections found" in str(e)
 
     # Test 3: ANONYMIZE scenario that should hit line 747
     complex_anonymize = sqlglot.parse_one("ANONYMIZE(UPPER(nonexistent_col))")

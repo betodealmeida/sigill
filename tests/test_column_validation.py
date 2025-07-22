@@ -75,10 +75,10 @@ class TestCoverage100:
 
         result = tighten(query, {permission})
 
-        # Should have COUNT(*) and NULL for other_col
+        # Should have COUNT(*) only, no NULL for other_col
         result_sql = result.sql()
         assert "COUNT(*)" in result_sql
-        assert "NULL" in result_sql
+        assert "NULL" not in result_sql
 
     def test_having_clause_exact_conditions(self):
         """Test line 318: HAVING clause return True when conditions match."""

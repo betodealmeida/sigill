@@ -128,7 +128,7 @@ class TestTighten:
         }
 
         result = tighten(query, permissions)
-        expected_result = "SELECT ANONYMIZE(name), age, NULL FROM users"
+        expected_result = "SELECT ANONYMIZE(name), age FROM users"
 
         assert result.sql() == expected_result
 
@@ -341,11 +341,11 @@ class TestEdgeCases:
         permissions = {permission}
         result = tighten(query, permissions)
 
-        # Should map COUNT(*) to COUNT(*), name to ANONYMIZE(name), and add NULL for age
+        # Should map COUNT(*) to COUNT(*), name to ANONYMIZE(name), skip age (no NULL)
         result_sql = result.sql()
         assert "COUNT(*)" in result_sql
         assert "ANONYMIZE(name)" in result_sql
-        assert "NULL" in result_sql
+        assert "NULL" not in result_sql  # No longer adds NULL for unmatched columns
 
 
 class TestErrorHandling:
